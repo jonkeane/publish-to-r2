@@ -1,0 +1,10 @@
+.cache/
+dist/
+R2Publisher.lrplugin/bin/r2publisher
+.DS_Store
+*.lrcat*
+*.jpg
+*.jpeg
+*.dng
+*.raw
+

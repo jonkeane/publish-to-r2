@@ -1,0 +1,38 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Go, Lua, and schema tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: '1.26.8'
+          cache: false
+
+      - name: Install Lua
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes lua5.4
+
+      - name: Check Go formatting and vet packages
+        working-directory: uploader
+        run: |
+          test -z "$(gofmt -l .)"
+          go vet ./...
+
+      - name: Run plugin tests
+        run: make test

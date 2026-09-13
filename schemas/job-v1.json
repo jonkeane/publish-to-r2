@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://r2publisher.local/schemas/job-v1.json",
+  "title": "R2 Publisher job protocol v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "jobId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "profile": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "catalogPath": {
+      "type": "string",
+      "pattern": "^/"
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "serviceId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "galleryId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "expectedRevision": {
+      "type": "string",
+      "pattern": "^$|^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "photos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "caption": {
+                "type": "string"
+              },
+              "alt": {
+                "type": "string"
+              },
+              "copyright": {
+                "type": "string"
+              },
+              "dateTaken": {
+                "type": "string"
+              },
+              "ownerName": {
+                "type": "string"
+              },
+              "license": {
+                "type": "string"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "exif": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "make": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "string"
+                  },
+                  "lens": {
+                    "type": "string"
+                  },
+                  "focallength": {
+                    "type": "string"
+                  },
+                  "fstop": {
+                    "type": "string"
+                  },
+                  "exposure": {
+                    "type": "string"
+                  },
+                  "iso": {
+                    "type": "string"
+                  },
+                  "time": {
+                    "type": "string"
+                  },
+                  "flash": {
+                    "type": "string"
+                  },
+                  "preservedfilename": {
+                    "type": "string"
+                  },
+                  "emulsion": {
+                    "type": "string",
+                    "description": "Film stock from the exported JPEG XMP AnalogExif:Film property, including manufacturer and stock speed."
+                  }
+                },
+                "required": []
+              }
+            },
+            "required": []
+          },
+          "renditions": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "thumbnail": {
+                "type": "string",
+                "pattern": "^/"
+              },
+              "gallery": {
+                "type": "string",
+                "pattern": "^/"
+              }
+            },
+            "required": [
+              "thumbnail",
+              "gallery"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "path",
+          "metadata"
+        ]
+      }
+    },
+    "removals": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+      }
+    },
+    "order": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+      }
+    }
+  },
+  "required": [
+    "version",
+    "jobId",
+    "profile",
+    "catalogPath",
+    "namespace",
+    "serviceId",
+    "galleryId",
+    "expectedRevision",
+    "title",
+    "photos",
+    "removals"
+  ]
+}

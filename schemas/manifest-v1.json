@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://r2publisher.local/schemas/manifest-v1.json",
+  "title": "R2 Publisher manifest protocol v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "parentRevision": {
+      "type": "string",
+      "pattern": "^$|^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "galleryId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "serviceId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "caption": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string"
+          },
+          "copyright": {
+            "type": "string"
+          },
+          "dateTaken": {
+            "type": "string"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "exif": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "make": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "lens": {
+                "type": "string"
+              },
+              "focallength": {
+                "type": "string"
+              },
+              "fstop": {
+                "type": "string"
+              },
+              "exposure": {
+                "type": "string"
+              },
+              "iso": {
+                "type": "string"
+              },
+              "time": {
+                "type": "string"
+              },
+              "flash": {
+                "type": "string"
+              },
+              "preservedfilename": {
+                "type": "string"
+              },
+              "emulsion": {
+                "type": "string",
+                "description": "Film stock from the exported JPEG XMP AnalogExif:Film property, including manufacturer and stock speed."
+              }
+            },
+            "required": []
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$"
+          },
+          "key": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "dateUpload": {
+            "type": "string"
+          },
+          "lastUpdate": {
+            "type": "string"
+          },
+          "originalFormat": {
+            "const": "jpg"
+          },
+          "renditions": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "thumbnail": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string",
+                    "format": "uri",
+                    "pattern": "^https://"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "bytes": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "key",
+                  "source",
+                  "width",
+                  "height",
+                  "bytes",
+                  "sha256"
+                ]
+              },
+              "gallery": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "key": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "string",
+                    "format": "uri",
+                    "pattern": "^https://"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "bytes": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "key",
+                  "source",
+                  "width",
+                  "height",
+                  "bytes",
+                  "sha256"
+                ]
+              }
+            },
+            "required": [
+              "thumbnail",
+              "gallery"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "source",
+          "width",
+          "height",
+          "bytes",
+          "sha256"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "revision",
+    "parentRevision",
+    "galleryId",
+    "namespace",
+    "serviceId",
+    "title",
+    "updatedAt",
+    "entries"
+  ]
+}
