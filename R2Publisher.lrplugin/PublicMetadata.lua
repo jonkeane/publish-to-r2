@@ -7,8 +7,8 @@ end
 function Metadata.read(photo, settings)
     local tags = {}
     for tag in value(photo, 'keywordTagsForExport'):gmatch('[^,]+') do
-        tag = tag:match('^%s*(.-)%s*$')
-        if tag ~= '' then tags[#tags + 1] = tag end
+        local trimmedTag = tag:match('^%s*(.-)%s*$')
+        if trimmedTag ~= '' then tags[#tags + 1] = trimmedTag end
     end
     local filename = value(photo, 'preservedFileName')
     if filename == '' then filename = value(photo, 'fileName') end
