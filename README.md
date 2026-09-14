@@ -27,11 +27,11 @@ The `site/` directory is a separate checkout of your existing photo site, with t
 
    ```sh
    export R2_PUBLIC_BASE_URL="https://YOUR_IMAGE_DOMAIN"
-   go run github.com/jkeane/publish-to-r2/uploader/cmd/r2import@latest
+   go run github.com/jonkeane/publish-to-r2/uploader/cmd/r2import@latest
    hugo
    ```
 
-4. Use your normal Netlify deployment workflow. To fetch new manifests during each build, prefix your existing Hugo build command with `go run github.com/jkeane/publish-to-r2/uploader/cmd/r2import@latest &&` and set the public `R2_PUBLIC_BASE_URL` in the build environment. Pin the version (rather than using `@latest`) once this repository is released. 
+4. Use your normal Netlify deployment workflow. To fetch new manifests during each build, prefix your existing Hugo build command with `go run github.com/jonkeane/publish-to-r2/uploader/cmd/r2import@latest &&` and set the public `R2_PUBLIC_BASE_URL` in the build environment. Pin the version (rather than using `@latest`) once this repository is released. 
 
 ### Cover-only gallery photos
 
