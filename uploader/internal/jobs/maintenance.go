@@ -8,14 +8,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/jkeane/publish-to-r2/uploader/internal/config"
-	"github.com/jkeane/publish-to-r2/uploader/internal/manifest"
-	"github.com/jkeane/publish-to-r2/uploader/internal/storage"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/jonkeane/publish-to-r2/uploader/internal/config"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/manifest"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/storage"
 )
 
 type CleanupReport struct {

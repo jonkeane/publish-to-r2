@@ -6,17 +6,18 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/jkeane/publish-to-r2/uploader/internal/config"
-	"github.com/jkeane/publish-to-r2/uploader/internal/credentials"
-	"github.com/jkeane/publish-to-r2/uploader/internal/jobs"
-	"github.com/jkeane/publish-to-r2/uploader/internal/manifest"
-	"github.com/jkeane/publish-to-r2/uploader/internal/storage"
 	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
 	"time"
+
+	"github.com/jonkeane/publish-to-r2/uploader/internal/config"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/credentials"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/jobs"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/manifest"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/storage"
 )
 
 const usage = `r2publisher: Lightroom Classic → Cloudflare R2 (macOS)

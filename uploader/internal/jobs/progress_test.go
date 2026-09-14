@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/jkeane/publish-to-r2/uploader/internal/storage"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/storage"
 )
 
 func readProgress(t *testing.T, e Engine, j Job) Progress {

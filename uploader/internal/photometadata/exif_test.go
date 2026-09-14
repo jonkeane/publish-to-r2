@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jkeane/publish-to-r2/uploader/internal/manifest"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/manifest"
 )
 
 func TestReadExifToolTechnicalFixture(t *testing.T) {

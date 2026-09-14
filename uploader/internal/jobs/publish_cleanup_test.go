@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jkeane/publish-to-r2/uploader/internal/manifest"
-	"github.com/jkeane/publish-to-r2/uploader/internal/storage"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/manifest"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/storage"
 )
 
 func orphan(s *fakeStore, namespace, id, hash string) string {

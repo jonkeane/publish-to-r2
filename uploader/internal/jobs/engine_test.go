@@ -6,9 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/jkeane/publish-to-r2/uploader/internal/config"
-	"github.com/jkeane/publish-to-r2/uploader/internal/manifest"
-	"github.com/jkeane/publish-to-r2/uploader/internal/storage"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -19,6 +16,10 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/jonkeane/publish-to-r2/uploader/internal/config"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/manifest"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/storage"
 )
 
 type fakeObject struct {

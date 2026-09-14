@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/jkeane/publish-to-r2/uploader/internal/manifest"
-	"github.com/jkeane/publish-to-r2/uploader/internal/storage"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/manifest"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/storage"
 )
 
 // cleanupPublishedPhotos runs under the gallery lock and photo reservation. History is an

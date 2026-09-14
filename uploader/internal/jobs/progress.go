@@ -3,7 +3,7 @@ package jobs
 import (
 	"path/filepath"
 
-	"github.com/jkeane/publish-to-r2/uploader/internal/config"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/config"
 )
 
 type Progress struct {

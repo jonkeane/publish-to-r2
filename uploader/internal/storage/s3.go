@@ -3,17 +3,18 @@ package storage
 import (
 	"context"
 	"errors"
+	"io"
+	"net/http"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	awscreds "github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
-	"github.com/jkeane/publish-to-r2/uploader/internal/config"
-	"github.com/jkeane/publish-to-r2/uploader/internal/credentials"
-	"github.com/jkeane/publish-to-r2/uploader/internal/manifest"
-	"io"
-	"net/http"
-	"time"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/config"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/credentials"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/manifest"
 )
 
 type S3 struct {

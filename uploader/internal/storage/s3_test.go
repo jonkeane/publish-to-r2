@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/jkeane/publish-to-r2/uploader/internal/config"
-	"github.com/jkeane/publish-to-r2/uploader/internal/credentials"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/config"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/credentials"
 )
 
 type transport func(*http.Request) (*http.Response, error)

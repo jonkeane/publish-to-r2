@@ -5,11 +5,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/jkeane/publish-to-r2/uploader/internal/config"
-	"github.com/jkeane/publish-to-r2/uploader/internal/manifest"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/jonkeane/publish-to-r2/uploader/internal/config"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/manifest"
 )
 
 type Photo struct {

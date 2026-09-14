@@ -16,10 +16,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jkeane/publish-to-r2/uploader/internal/config"
-	"github.com/jkeane/publish-to-r2/uploader/internal/manifest"
-	"github.com/jkeane/publish-to-r2/uploader/internal/photometadata"
-	"github.com/jkeane/publish-to-r2/uploader/internal/storage"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/config"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/manifest"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/photometadata"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/storage"
 )
 
 type Engine struct {

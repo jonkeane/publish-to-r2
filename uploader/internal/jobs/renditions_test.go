@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jkeane/publish-to-r2/uploader/internal/manifest"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/manifest"
 )
 
 func addRenditions(t *testing.T, e Engine, p *Prepared) {

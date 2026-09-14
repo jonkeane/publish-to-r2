@@ -1,4 +1,4 @@
-module github.com/jkeane/publish-to-r2/uploader
+module github.com/jonkeane/publish-to-r2/uploader
 
 go 1.26.0
 

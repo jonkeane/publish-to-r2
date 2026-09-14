@@ -3,12 +3,13 @@ package jobs
 import (
 	"context"
 	"errors"
-	"github.com/jkeane/publish-to-r2/uploader/internal/config"
-	"github.com/jkeane/publish-to-r2/uploader/internal/manifest"
 	"image/jpeg"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/jonkeane/publish-to-r2/uploader/internal/config"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/manifest"
 )
 
 type Prepared struct {

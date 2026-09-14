@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jkeane/publish-to-r2/uploader/internal/config"
-	"github.com/jkeane/publish-to-r2/uploader/internal/credentials"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/config"
+	"github.com/jonkeane/publish-to-r2/uploader/internal/credentials"
 )
 
 func TestLightroomConfiguration(t *testing.T) {
