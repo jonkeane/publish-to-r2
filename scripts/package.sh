@@ -23,7 +23,8 @@ while IFS= read -r module_dir; do
 done < "$task_package_dir/module-dirs.txt"
 install -m 644 "$(go env GOROOT)/LICENSE" docs/licenses/Go-LICENSE.txt
 cp -R R2Publisher.lrplugin "$task_package_dir/"
-cp README.md THIRD_PARTY_NOTICES.md "$task_package_dir/"
+cp README.md "$task_package_dir/"
+cp docs/THIRD_PARTY_NOTICES.md "$task_package_dir/"
 cp -R docs schemas "$task_package_dir/"
 if [[ -d site/.git ]]; then
   git -C site diff --binary > dist/photo-site-r2.patch
