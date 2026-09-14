@@ -5,7 +5,9 @@ export GOTOOLCHAIN := go1.26.8
 
 .PHONY: build test sdk-test package site-test
 build:
+	mkdir -p R2Publisher.lrplugin/bin dist
 	cd uploader && CGO_ENABLED=1 go build -trimpath -o ../R2Publisher.lrplugin/bin/r2publisher ./cmd/r2publisher
+	cd uploader && go build -trimpath -o ../dist/r2import ./cmd/r2import
 
 test:
 	cd uploader && go test -race ./...
@@ -15,10 +17,6 @@ test:
 
 sdk-test:
 	python3 tests/sdk_api.py "$(LIGHTROOM_SDK)"
-
-site-test:
-	cd site && go test ./cmd/r2import
-	python3 tests/hugo.py
 
 package: build
 	./scripts/package.sh

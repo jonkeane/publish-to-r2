@@ -1,4 +1,4 @@
-# Lightroom Classic → R2 Publisher
+# Lightroom to R2 Publisher plugin
 
 A macOS Lightroom Classic Export/Publish Service, a Go uploader, and a Hugo integration for `jonkeane/photo-site`. Lightroom publishes immutable JPEGs and gallery manifests to R2. A small site importer reads those manifests before Hugo builds **one ordinary page per photograph**, preserving the existing pagination, photo navigation, photo strip, and taxonomies.
 
@@ -27,15 +27,11 @@ The `site/` directory is a separate checkout of your existing photo site, with t
 
    ```sh
    export R2_PUBLIC_BASE_URL="https://YOUR_IMAGE_DOMAIN"
-   go run ./cmd/r2import
+   go run github.com/jkeane/publish-to-r2/uploader/cmd/r2import@latest
    hugo
    ```
 
-4. Use your normal Netlify deployment workflow. To fetch new manifests during each build, prefix your existing Hugo build command with `go run ./cmd/r2import &&` and set the public `R2_PUBLIC_BASE_URL` in the build environment. Retain any existing Flickr/asset preparation steps.
-
-The importer writes `data/r2/galleries/SLUG.json`. The existing content adapter maps R2 records to its photo parameters and continues to call `AddPage`. R2 takes precedence for a migrated gallery; other Flickr galleries continue working. Image edits keep the photo page's UUID-based path and update its R2 image URL. New photos/removals and changed metadata reach the website on the next import/build/deploy. The plugin never starts a Netlify build.
-
-Read [setup and operations](docs/setup.md), [protocol and recovery](docs/protocol.md), [metadata mapping](docs/metadata.md), and [acceptance testing](docs/acceptance.md) before importing your full library.
+4. Use your normal Netlify deployment workflow. To fetch new manifests during each build, prefix your existing Hugo build command with `go run github.com/jkeane/publish-to-r2/uploader/cmd/r2import@latest &&` and set the public `R2_PUBLIC_BASE_URL` in the build environment. Pin the version (rather than using `@latest`) once this repository is released. 
 
 ### Cover-only gallery photos
 
@@ -46,7 +42,7 @@ Publish the affected photos, then run the usual site import/build/deploy. The ma
 ## Project layout
 
 - `R2Publisher.lrplugin/`: SDK callbacks, identity metadata, public metadata extraction, and helper bridge.
-- `uploader/`: pinned AWS SDK for Go v2 transport, local credentials, transaction journal, diagnostics, reconciliation, and reviewed cleanup.
+- `uploader/`: pinned AWS SDK for Go v2 transport, the `r2publisher` uploader, the `r2import` website-manifest importer, local credentials, transaction journal, diagnostics, reconciliation, and reviewed cleanup.
 - `schemas/`: version 1 job, result, and public-manifest JSON schemas.
 - `tests/`: Lua SDK mocks, schema checks, and Hugo integration tests. Go transaction/transport tests live beside their packages.
 
