@@ -188,9 +188,10 @@ services.LrTasks.execute = function(command)
         assert(path, 'Credential input missing')
         credentialInput = path
         credentialDirectory = path:match('^(.*)/input.json$')
-        -- macOS uses `stat -f %Lp`; GitHub's Linux test runner uses `stat -c %a`.
+        -- GNU stat accepts `-f` for filesystem information, so try its
+        -- permission format first. macOS rejects it and uses `-f %Lp`.
         local quotedDirectory = Bridge.quote(credentialDirectory)
-        local mode = '$(/usr/bin/stat -f %Lp ' .. quotedDirectory .. ' 2>/dev/null || /usr/bin/stat -c %a ' .. quotedDirectory .. ')'
+        local mode = '$(/usr/bin/stat -c %a ' .. quotedDirectory .. ' 2>/dev/null || /usr/bin/stat -f %Lp ' .. quotedDirectory .. ')'
         assert(execute('test "' .. mode .. '" = 700') == 0,
             'Credential directory was not private')
         local keys = Bridge.read(path)
