@@ -21,7 +21,7 @@ The Cloudflare R2 settings include the destination, catalog, and credentials. **
 
 The `site/` directory is a separate checkout of your existing photo site, with the integration changes ready for review. `make package` also creates `dist/photo-site-r2.patch`. No browser-side gallery reader is used.
 
-1. Publish a collection, then right-click it and choose **Edit Collection**. Under **Cloudflare R2**, click **Copy Gallery ID**. The ID appears after the first successful publish. **Go to Published Collection** also opens its manifest URL: `https://YOUR_IMAGE_DOMAIN/galleries/GALLERY_ID/current.json`. The **Export gallery ID** setting appears only in ordinary Export, not Publish Service settings.
+1. Publish a collection, then right-click it and choose **Edit Collection**. Under **Cloudflare R2**, click **Copy Gallery ID**. The ID appears after the first successful publish. **Go to Published Collection** also opens its manifest URL: `https://YOUR_IMAGE_DOMAIN/galleries/GALLERY_ID/current.json`. The **Export gallery ID** setting appears only in ordinary Export, not Publish Service settings. To copy a selected photo's R2 identity, use **Library → Plug-in Extras → Copy R2 photo identity**. For a published photo, **Go to Published Photo** opens its R2 folder in the Cloudflare dashboard; its path is `photos/SERVICE_NAMESPACE/PHOTO_UUID/`, where the namespace is service-specific rather than the gallery ID.
 2. Add `r2_gallery_id: "GALLERY_ID"` to that gallery's existing `content/gallery/SLUG/_index.md`.
 3. From the photo-site checkout, run:
 

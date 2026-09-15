@@ -4,6 +4,7 @@ local LrTasks = import 'LrTasks'
 local LrView = import 'LrView'
 local Provider = require 'ExportServiceProvider'
 local Bridge = require 'JobBridge'
+local Dashboard = require 'R2Dashboard'
 Provider.small_icon = 'cloudflare.png'
 Provider.supportsIncrementalPublish = true
 Provider.supportsCustomSortOrder = true
@@ -106,7 +107,21 @@ function Provider.goToPublishedCollection(settings, info)
     if url then LrHttp.openUrlInBrowser(url) end
 end
 function Provider.goToPublishedPhoto(settings, info)
-    local url = info.publishedPhoto:getRemoteUrl()
-    if url then LrHttp.openUrlInBrowser(url) end
+    -- Lightroom exposes this action from a published photo. Prefer the R2
+    -- folder so the user can inspect or manage every rendition; use the public
+    -- image URL when this service has not yet saved a usable R2 profile.
+    LrTasks.startAsyncTask(function()
+        local photo = info.publishedPhoto
+        local publicUrl = photo:getRemoteUrl()
+        local dashboardUrl
+        if settings.profile and settings.profile ~= '' then
+            local ok, profile = LrTasks.pcall(function()
+                return Bridge.call { 'info', '--profile', settings.profile }
+            end)
+            if ok then dashboardUrl = Dashboard.photoFolderUrl(profile, photo:getRemoteId()) end
+        end
+        local url = dashboardUrl or publicUrl
+        if url then LrHttp.openUrlInBrowser(url) end
+    end)
 end
 return Provider

@@ -9,5 +9,8 @@ return {
         file = 'PublishServiceProvider.lua',
     },
     LrMetadataProvider = 'MetadataDefinition.lua',
-    VERSION = { major = 0, minor = 1, revision = 1, build = 3 },
+    LrLibraryMenuItems = {
+        { title = 'Copy R2 photo identity', file = 'CopyPhotoIdentity.lua' },
+    },
+    VERSION = { major = 0, minor = 1, revision = 1, build = 4 },
 }

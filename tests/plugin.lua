@@ -45,6 +45,14 @@ _PLUGIN = { path = 'R2Publisher.lrplugin' }
 local Identity = require 'PhotoIdentity'
 local Bridge = require 'JobBridge'
 local Json = require 'Json'
+local Dashboard = require 'R2Dashboard'
+assert(Dashboard.photoFolderUrl({
+    endpoint = 'https://3ba8c1577c42d061f38addafe256a663.r2.cloudflarestorage.com',
+    bucket = 'photo-site', namespace = 'b758cd6a5f1fc2b62b887ef9603e0a3c',
+}, '0019F028-B66B-42EC-B644-6F1ADCFA49B1') ==
+    'https://dash.cloudflare.com/3ba8c1577c42d061f38addafe256a663/r2/default/buckets/photo-site?prefix=photos%2Fb758cd6a5f1fc2b62b887ef9603e0a3c%2F0019F028-B66B-42EC-B644-6F1ADCFA49B1%2F')
+assert(Dashboard.photoFolderUrl({endpoint='https://example.com', bucket='photo-site', namespace='catalog'}, 'photo') == nil,
+    'Dashboard links must require an R2 account endpoint')
 local function photo(localID, props)
     return {
         localIdentifier = localID, catalog = catalog, props = props or {},
@@ -597,6 +605,29 @@ resultStatus='committed';resultWarnings=nil
 local Publish = require 'PublishServiceProvider'
 assert(Publish.deleteFirstOnPublish() == true,
     'Pending removals must run before uploads that could fail ownership checks')
+local savedStartAsyncTask, savedOpenUrl, savedBridgeCall = services.LrTasks.startAsyncTask,
+    services.LrHttp.openUrlInBrowser, Bridge.call
+local openedUrl
+services.LrTasks.startAsyncTask = function(task) task() end
+services.LrHttp.openUrlInBrowser = function(url) openedUrl = url end
+Bridge.call = function(args)
+    assert(args[1] == 'info' and args[2] == '--profile' and args[3] == 'website')
+    return {endpoint='https://3ba8c1577c42d061f38addafe256a663.r2.cloudflarestorage.com',
+        bucket='photo-site', namespace='catalog'}
+end
+local publishedPhotoForDashboard = {
+    getRemoteId = function() return 'photo-id' end,
+    getRemoteUrl = function() return 'https://images.example.com/photos/catalog/photo-id/large.jpg' end,
+}
+Publish.goToPublishedPhoto({profile='website'}, {publishedPhoto=publishedPhotoForDashboard})
+assert(openedUrl == 'https://dash.cloudflare.com/3ba8c1577c42d061f38addafe256a663/r2/default/buckets/photo-site?prefix=photos%2Fcatalog%2Fphoto-id%2F',
+    'Published photo did not open its R2 dashboard folder')
+Bridge.call = function() error('profile unavailable') end
+Publish.goToPublishedPhoto({profile='website'}, {publishedPhoto=publishedPhotoForDashboard})
+assert(openedUrl == 'https://images.example.com/photos/catalog/photo-id/large.jpg',
+    'Published photo did not fall back to its public URL')
+Bridge.call, services.LrTasks.startAsyncTask, services.LrHttp.openUrlInBrowser = savedBridgeCall,
+    savedStartAsyncTask, savedOpenUrl
 -- Collection dialogs are blocking callbacks; catalog reads must be deferred,
 -- and the displayed ID must never become a persisted collection setting.
 local pendingDialogTask, inDialogTask
