@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/jonkeane/publish-to-r2/uploader/internal/manifest"
 	"github.com/jonkeane/publish-to-r2/uploader/internal/storage"
 )
 
@@ -96,7 +97,7 @@ func TestFailedUploadDoesNotAdvanceProgress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.fail = entry.Renditions["gallery"].Key
+	s.fail = manifest.StagingKey(p.Job.Namespace, "photo", entry.Renditions["gallery"].SHA256)
 	if _, err := e.Run(context.Background(), p.Job); err == nil {
 		t.Fatal("expected upload failure")
 	}

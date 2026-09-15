@@ -30,7 +30,7 @@ func newGate(s storage.Store) *gatedStore {
 }
 
 func (s *gatedStore) Put(ctx context.Context, key string, body io.ReadSeeker, size int64, options storage.PutOptions) error {
-	if strings.HasPrefix(key, "photos/") {
+	if strings.HasPrefix(key, "staging/") {
 		n := s.active.Add(1)
 		defer s.active.Add(-1)
 		for old := s.peak.Load(); n > old && !s.peak.CompareAndSwap(old, n); old = s.peak.Load() {
@@ -331,7 +331,7 @@ type failingUploadStore struct {
 }
 
 func (s *failingUploadStore) Put(ctx context.Context, key string, body io.ReadSeeker, size int64, options storage.PutOptions) error {
-	if !strings.HasPrefix(key, "photos/") {
+	if !strings.HasPrefix(key, "staging/") {
 		return s.Store.Put(ctx, key, body, size, options)
 	}
 	s.active.Add(1)
@@ -357,7 +357,7 @@ func TestFailedUploadCancelsPeersBeforeReturning(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	failure := &failingUploadStore{Store: s, failKey: entry.Key, entered: make(chan struct{}, 3), failNow: make(chan struct{})}
+	failure := &failingUploadStore{Store: s, failKey: manifest.StagingKey(p.Job.Namespace, "photo", entry.SHA256), entered: make(chan struct{}, 3), failNow: make(chan struct{})}
 	e.Store = failure
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

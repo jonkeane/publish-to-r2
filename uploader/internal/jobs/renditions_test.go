@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -34,7 +33,7 @@ func TestRenditionsCommitRetryAndCleanupRetention(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Fail the final rendition after the first two uploads have succeeded.
-	s.fail = entry.Renditions["gallery"].Key
+	s.fail = manifest.StagingKey(p.Job.Namespace, "photo", entry.Renditions["gallery"].SHA256)
 	if r, err := e.Run(context.Background(), p.Job); err == nil || r.Status == "committed" {
 		t.Fatal("partial set committed")
 	}
@@ -92,10 +91,11 @@ func TestRenditionsCommitRetryAndCleanupRetention(t *testing.T) {
 	if err != nil || len(report.Objects) != 0 {
 		t.Fatal("cleanup would delete historical renditions", err)
 	}
-	// Once their history expires, all three objects can be collected.
+	// Removed stable public objects are deleted as part of publication cleanup;
+	// only the expired history manifest remains for maintenance to collect.
 	e.Profile.HistoryKeep = 0
 	report, err = e.PlanCleanup(context.Background())
-	if err != nil || len(report.Objects) != 3 {
+	if err != nil || len(report.Objects) != 0 {
 		t.Fatalf("unexpected unreferenced rendition set: %+v %v", report, err)
 	}
 }
@@ -108,7 +108,7 @@ func TestRenditionsVerifyUnchangedReferencesAndTamperedStaging(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.fail = entry.Renditions["gallery"].Key
+	s.fail = manifest.StagingKey(p.Job.Namespace, "photo", entry.Renditions["gallery"].SHA256)
 	if _, err := e.Run(context.Background(), p.Job); err == nil {
 		t.Fatal("expected failed upload")
 	}
@@ -180,7 +180,7 @@ func TestRenditionValidationAndDeduplication(t *testing.T) {
 		},
 		func(m *manifest.Manifest) {
 			i := m.Entries[0].Renditions["thumbnail"]
-			i.SHA256 = strings.Repeat("0", 64)
+			i.SHA256 = "not-a-hash"
 			m.Entries[0].Renditions["thumbnail"] = i
 		},
 	} {

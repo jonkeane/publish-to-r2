@@ -260,7 +260,7 @@ func validate(data []byte, base, id string) error {
 	}
 	seen := map[string]bool{}
 	for _, p := range m.Entries {
-		key := "photos/" + m.Namespace + "/" + p.ID + "/" + p.SHA256 + ".jpg"
+		key := imageKey(m.Namespace, p.ID, "large")
 		if !validID.MatchString(p.ID) || seen[p.ID] || !validHash.MatchString(p.SHA256) || p.Key != key || p.Source != strings.TrimRight(base, "/")+"/"+key || p.Width < 1 || p.Height < 1 || p.Bytes < 1 {
 			return errors.New("invalid photograph or foreign image URL")
 		}
@@ -269,7 +269,7 @@ func validate(data []byte, base, id string) error {
 				return errors.New("incomplete rendition set")
 			}
 			for name, image := range p.Renditions {
-				key := "photos/" + m.Namespace + "/" + p.ID + "/" + image.SHA256 + ".jpg"
+				key := imageKey(m.Namespace, p.ID, name)
 				if (name != "thumbnail" && name != "gallery") || !validHash.MatchString(image.SHA256) || image.Key != key || image.Source != strings.TrimRight(base, "/")+"/"+key || image.Width < 1 || image.Height < 1 || image.Bytes < 1 {
 					return errors.New("invalid rendition or foreign image URL")
 				}
@@ -285,6 +285,10 @@ func validate(data []byte, base, id string) error {
 		}
 	}
 	return nil
+}
+
+func imageKey(namespace, id, name string) string {
+	return "photos/" + namespace + "/" + id + "/" + name + ".jpg"
 }
 func writeAtomic(path string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {

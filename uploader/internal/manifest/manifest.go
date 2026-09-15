@@ -52,6 +52,7 @@ type EXIF struct {
 var RenditionNames = []string{"thumbnail", "gallery"}
 
 func ValidRendition(name string) bool { return name == "thumbnail" || name == "gallery" }
+func ValidImageName(name string) bool { return name == "large" || ValidRendition(name) }
 
 type Image struct {
 	Key    string `json:"key"`
@@ -62,9 +63,9 @@ type Image struct {
 	SHA256 string `json:"sha256"`
 }
 
-func (i Image) Validate(namespace, id, base string) error {
+func (i Image) Validate(namespace, id, name, base string) error {
 	u, err := url.Parse(i.Source)
-	if !ValidHash(i.SHA256) || i.Key != Key(namespace, id, i.SHA256) || i.Bytes <= 0 || i.Width <= 0 || i.Height <= 0 || err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || i.Source != URL(base, i.Key) {
+	if !ValidHash(i.SHA256) || i.Key != Key(namespace, id, name) || i.Bytes <= 0 || i.Width <= 0 || i.Height <= 0 || err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || i.Source != URL(base, i.Key) {
 		return errors.New("invalid rendition or foreign image URL")
 	}
 	return nil
@@ -112,7 +113,20 @@ type Manifest struct {
 	Entries        []Entry   `json:"entries"`
 }
 
-func Key(namespace, id, hash string) string {
+// Key is the stable public object key for one image size.
+func Key(namespace, id, name string) string {
+	return "photos/" + namespace + "/" + id + "/" + name + ".jpg"
+}
+
+// StagingKey is an immutable, non-public upload location. It is promoted to
+// the corresponding Key only after every image in the job has verified.
+func StagingKey(namespace, id, hash string) string {
+	return "staging/" + namespace + "/" + id + "/" + hash + ".jpg"
+}
+
+// LegacyKey identifies the hash-addressed public layout accepted only by
+// migration and retention cleanup. New manifests must use Key.
+func LegacyKey(namespace, id, hash string) string {
 	return "photos/" + namespace + "/" + id + "/" + hash + ".jpg"
 }
 func CurrentKey(gallery string) string { return "galleries/" + gallery + "/current.json" }
@@ -141,7 +155,7 @@ func (m Manifest) Validate() error {
 	seen := map[string]bool{}
 	for _, e := range m.Entries {
 		u, err := url.Parse(e.Source)
-		if !ValidID(e.ID) || !ValidHash(e.SHA256) || e.Key != Key(m.Namespace, e.ID, e.SHA256) || e.Bytes <= 0 || e.Width <= 0 || e.Height <= 0 || err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || !strings.HasSuffix(u.Path, "/"+e.Key) || seen[e.ID] {
+		if !ValidID(e.ID) || !ValidHash(e.SHA256) || e.Key != Key(m.Namespace, e.ID, "large") || e.Bytes <= 0 || e.Width <= 0 || e.Height <= 0 || err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || !strings.HasSuffix(u.Path, "/"+e.Key) || seen[e.ID] {
 			return fmt.Errorf("invalid or duplicate manifest entry")
 		}
 		if e.Renditions != nil {
@@ -153,7 +167,7 @@ func (m Manifest) Validate() error {
 				if !ValidRendition(name) {
 					return errors.New("unknown rendition")
 				}
-				if err := image.Validate(m.Namespace, e.ID, base); err != nil {
+				if err := image.Validate(m.Namespace, e.ID, name, base); err != nil {
 					return err
 				}
 			}

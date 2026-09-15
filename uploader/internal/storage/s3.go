@@ -5,12 +5,14 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	awscreds "github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go"
 	"github.com/jonkeane/publish-to-r2/uploader/internal/config"
 	"github.com/jonkeane/publish-to-r2/uploader/internal/credentials"
@@ -96,6 +98,24 @@ func (s *S3) Put(ctx context.Context, key string, body io.ReadSeeker, size int64
 		in.IfNoneMatch = aws.String("*")
 	}
 	_, err := s.client.PutObject(ctx, in)
+	return safeError(err)
+}
+func (s *S3) Copy(ctx context.Context, source, destination string, o CopyOptions) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	copySource := url.PathEscape(s.bucket + "/" + source)
+	in := &s3.CopyObjectInput{
+		Bucket:            &s.bucket,
+		Key:               &destination,
+		CopySource:        &copySource,
+		MetadataDirective: types.MetadataDirectiveReplace,
+		ContentType:       &o.ContentType,
+		CacheControl:      &o.CacheControl,
+	}
+	if o.Hash != "" {
+		in.Metadata = map[string]string{"sha256": o.Hash}
+	}
+	_, err := s.client.CopyObject(ctx, in)
 	return safeError(err)
 }
 func (s *S3) Delete(ctx context.Context, key string) error {

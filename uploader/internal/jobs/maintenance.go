@@ -94,13 +94,14 @@ func (e Engine) PlanCleanup(ctx context.Context) (CleanupReport, error) {
 		}
 	}
 	for _, o := range objects {
-		if !strings.HasPrefix(o.Key, "photos/") {
+		if !strings.HasPrefix(o.Key, "photos/") && !strings.HasPrefix(o.Key, "staging/") {
 			continue
 		}
-		parts := strings.Split(o.Key, "/")
-		if len(parts) != 4 || !manifest.ValidID(parts[1]) || !manifest.ValidID(parts[2]) || !strings.HasSuffix(parts[3], ".jpg") || !manifest.ValidHash(strings.TrimSuffix(parts[3], ".jpg")) {
+		if !validImageObjectKey(o.Key) {
 			return r, errors.New("cleanup refused: unrecognized photo object")
 		}
+		// Staging objects are never manifest references. Public legacy objects
+		// remain protected by retained history during the stable-filename rollout.
 		if !references[o.Key] && o.Modified.Before(cutoff) {
 			r.Objects = append(r.Objects, o.Key)
 			r.Bytes += o.Size
@@ -109,6 +110,19 @@ func (e Engine) PlanCleanup(ctx context.Context) (CleanupReport, error) {
 	sort.Strings(r.History)
 	sort.Strings(r.Objects)
 	return r, nil
+}
+
+func validImageObjectKey(key string) bool {
+	parts := strings.Split(key, "/")
+	if len(parts) != 4 || !manifest.ValidID(parts[1]) || !manifest.ValidID(parts[2]) || !strings.HasSuffix(parts[3], ".jpg") {
+		return false
+	}
+	name := strings.TrimSuffix(parts[3], ".jpg")
+	if parts[0] == "staging" {
+		return manifest.ValidHash(name) && key == manifest.StagingKey(parts[1], parts[2], name)
+	}
+	return (manifest.ValidImageName(name) && key == manifest.Key(parts[1], parts[2], name)) ||
+		(manifest.ValidHash(name) && key == manifest.LegacyKey(parts[1], parts[2], name))
 }
 func (e Engine) ApplyCleanup(ctx context.Context, report CleanupReport) error {
 	unlock, err := Lock(e.Root)

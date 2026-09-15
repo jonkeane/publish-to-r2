@@ -21,13 +21,9 @@ func orphan(s *fakeStore, namespace, id, hash string) string {
 func TestRepublishRemovesAllObsoleteVersions(t *testing.T) {
 	e, s := fixture(t)
 	p := prepare(t, e, "gallery")
-	add(t, e, &p, "photo", 70) // Legacy single-image export.
+	add(t, e, &p, "photo", 70)
 	old := run(t, e, p.Job)
-	stale := orphan(s, "catalog", "photo", "a") // Includes old tests/abandoned jobs.
-	untouched := []string{
-		orphan(s, "catalog", "photo-other", "b"),
-		orphan(s, "other-catalog", "photo", "c"),
-	}
+	stale := orphan(s, "catalog", "photo", "a") // Legacy migration source.
 	q := prepare(t, e, "gallery")
 	addRenditions(t, e, &q)
 	entry, err := e.inspect(q.Job, q.Job.Photos[0])
@@ -35,32 +31,29 @@ func TestRepublishRemovesAllObsoleteVersions(t *testing.T) {
 		t.Fatal(err)
 	}
 	run(t, e, q.Job)
-	for _, key := range []string{old.Photos[0].Key, stale} {
-		if _, ok := s.objects[key]; ok {
-			t.Fatal("obsolete version retained", key)
-		}
+	if _, ok := s.objects[old.Photos[0].Key]; !ok {
+		t.Fatal("stable large image was removed")
 	}
 	for _, image := range entry.Images() {
-		untouched = append(untouched, image.Key)
-	}
-	untouched = append(untouched, manifest.HistoryKey("gallery", old.Revision))
-	for _, key := range untouched {
-		if _, ok := s.objects[key]; !ok {
-			t.Fatal("current rendition, unrelated object, or audit history deleted", key)
+		if _, ok := s.objects[image.Key]; !ok {
+			t.Fatal("current rendition missing", image.Key)
 		}
 	}
-	// An unchanged republish also sweeps old versions without deleting/re-uploading
-	// the current set. A replay after acknowledgment needs no staged files.
-	stale = orphan(s, "catalog", "photo", "d")
+	if _, ok := s.objects[stale]; !ok {
+		t.Fatal("legacy object was removed before grace-period maintenance")
+	}
+	// An unchanged republish does not rewrite stable public objects. A replay
+	// after acknowledgment needs no staged files.
 	r := prepare(t, e, "gallery")
 	addRenditions(t, e, &r)
-	run(t, e, r.Job)
-	run(t, e, r.Job)
-	if _, ok := s.objects[stale]; ok {
-		t.Fatal("unchanged republish did not clean up")
-	}
+	counts := map[string]int{}
 	for _, image := range entry.Images() {
-		if s.puts[image.Key] != 1 {
+		counts[image.Key] = s.puts[image.Key]
+	}
+	run(t, e, r.Job)
+	run(t, e, r.Job)
+	for _, image := range entry.Images() {
+		if s.puts[image.Key] != counts[image.Key] {
 			t.Fatal("unchanged image uploaded again")
 		}
 	}
@@ -69,8 +62,14 @@ func TestRepublishRemovesAllObsoleteVersions(t *testing.T) {
 	add(t, e, &u, "photo", 255)
 	latest := run(t, e, u.Job)
 	photos, err := s.List(context.Background(), "photos/catalog/photo/")
-	if err != nil || len(photos) != 1 || photos[0].Key != latest.Photos[0].Key {
+	if err != nil || len(photos) != 2 {
 		t.Fatalf("obsolete renditions retained: %+v %v", photos, err)
+	}
+	if _, ok := s.objects[latest.Photos[0].Key]; !ok {
+		t.Fatal("latest large image missing")
+	}
+	if _, ok := s.objects[manifest.Key("catalog", "photo", "thumbnail")]; ok {
+		t.Fatal("obsolete thumbnail retained")
 	}
 }
 
@@ -82,11 +81,12 @@ func TestRejectsPhotoAlreadyInAnotherGallery(t *testing.T) {
 	q := prepare(t, e, "two")
 	add(t, e, &q, "photo", 70)
 	before := len(s.objects)
+	deletes := len(s.deletes)
 	result, err := e.Run(context.Background(), q.Job)
 	if err == nil || !strings.Contains(err.Error(), "already belongs to gallery") || result.Status == "committed" {
 		t.Fatalf("duplicate ownership accepted: %+v %v", result, err)
 	}
-	if len(s.objects) != before || len(s.deletes) != 0 {
+	if len(s.objects) != before || len(s.deletes) != deletes {
 		t.Fatal("duplicate export changed remote storage")
 	}
 	// Moving a photo explicitly is supported once its previous owner removes it.
@@ -176,6 +176,10 @@ func TestRepublishFailureAndRecovery(t *testing.T) {
 			old := run(t, e, p.Job)
 			q := prepare(t, e, "gallery")
 			addRenditions(t, e, &q)
+			updated, inspectErr := e.inspect(q.Job, q.Job.Photos[0])
+			if inspectErr != nil {
+				t.Fatal(inspectErr)
+			}
 			// Use another current manifest to test failed reads during cleanup.
 			other := prepare(t, e, "other")
 			run(t, e, other.Job)
@@ -183,7 +187,7 @@ func TestRepublishFailureAndRecovery(t *testing.T) {
 			validOther := s.objects[otherKey]
 			switch phase {
 			case "upload":
-				s.fail = "photos/"
+				s.fail = "staging/"
 			case "history":
 				s.fail = "/history/"
 			case "commit":
@@ -191,7 +195,7 @@ func TestRepublishFailureAndRecovery(t *testing.T) {
 			case "lost commit":
 				s.loseCommit = true
 			case "delete":
-				s.failDelete = old.Photos[0].Key
+				s.failDelete = manifest.StagingKey(q.Job.Namespace, "photo", updated.SHA256)
 			case "photo list":
 				s.failList = "photos/"
 			case "gallery list":
@@ -209,7 +213,7 @@ func TestRepublishFailureAndRecovery(t *testing.T) {
 				t.Fatalf("cleanup error lost its cause: %v", err)
 			}
 			if _, ok := s.objects[old.Photos[0].Key]; !ok {
-				t.Fatal("old image deleted before successful commit and reference scan")
+				t.Fatal("stable image disappeared before successful commit")
 			}
 			for _, file := range q.Job.Photos[0].files() {
 				if _, err := os.Stat(file.Path); err != nil {
@@ -224,14 +228,14 @@ func TestRepublishFailureAndRecovery(t *testing.T) {
 			s.fail, s.failDelete, s.failList, s.failGet = "", "", "", ""
 			s.objects[otherKey] = validOther
 			run(t, e, q.Job)
-			if _, ok := s.objects[old.Photos[0].Key]; ok {
-				t.Fatal("retry did not finish cleanup")
+			if got := s.objects[old.Photos[0].Key].info.Hash; got != updated.SHA256 {
+				t.Fatal("retry did not preserve the promoted stable image")
 			}
 			if s.puts[manifest.CurrentKey("gallery")] != 2 {
 				t.Fatal("recovery rewrote the committed manifest")
 			}
 			for key, count := range s.puts {
-				if strings.HasPrefix(key, "photos/") && count != 1 {
+				if strings.HasPrefix(key, "staging/") && count != 1 {
 					t.Fatal("recovery uploaded an image again")
 				}
 			}
@@ -247,14 +251,17 @@ func TestPartialCleanupCanResume(t *testing.T) {
 	e, s := fixture(t)
 	p := prepare(t, e, "gallery")
 	addRenditions(t, e, &p)
-	first := orphan(s, "catalog", "photo", "0")
-	second := orphan(s, "catalog", "photo", "f")
+	entry, err := e.inspect(p.Job, p.Job.Photos[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	second := manifest.StagingKey(p.Job.Namespace, "photo", entry.SHA256)
 	s.failDelete = second
 	if _, err := e.Run(context.Background(), p.Job); err == nil {
 		t.Fatal("expected partial cleanup failure")
 	}
-	if _, ok := s.objects[first]; ok {
-		t.Fatal("first obsolete image was not removed")
+	if _, ok := s.objects[second]; !ok {
+		t.Fatal("failed staged cleanup removed its retry target")
 	}
 	s.failDelete = ""
 	results, err := e.Reconcile(context.Background(), "gallery")

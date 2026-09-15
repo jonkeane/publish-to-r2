@@ -227,6 +227,11 @@ func (e Engine) Run(ctx context.Context, j Job) (result Result, runErr error) {
 	if err = e.uploadAll(ctx, j, uploads); err != nil {
 		return result, err
 	}
+	// Staged objects are immutable and not publicly referenced. Do not replace a
+	// stable public filename until every staged rendition is present and verified.
+	if err = e.promoteAll(ctx, j, uploads); err != nil {
+		return result, err
+	}
 	for i, p := range j.Photos {
 		entry := byID[p.ID]
 		result.Photos[i] = PhotoResult{ID: p.ID, Status: "uploaded", Key: entry.Key, URL: entry.Source, Bytes: entry.Bytes, SHA256: entry.SHA256}
@@ -284,6 +289,10 @@ func putJSON(ctx context.Context, s storage.Store, key string, v any, o storage.
 	return s.Put(ctx, key, bytes.NewReader(b), int64(len(b)), o)
 }
 func (e Engine) inspect(j Job, p Photo) (manifest.Entry, error) {
+	return e.inspectImage(j, p, "large")
+}
+
+func (e Engine) inspectImage(j Job, p Photo, name string) (manifest.Entry, error) {
 	var entry manifest.Entry
 	if err := OwnedPath(JobDir(e.Root, j.JobID), p.Path); err != nil {
 		return entry, err
@@ -323,12 +332,12 @@ func (e Engine) inspect(j Job, p Photo) (manifest.Entry, error) {
 	}
 	p.Metadata.EXIF = &exif
 	p.Metadata.DateTaken = exif.Time
-	key := manifest.Key(j.Namespace, p.ID, hash)
+	key := manifest.Key(j.Namespace, p.ID, name)
 	entry = manifest.Entry{ID: p.ID, Key: key, Source: manifest.URL(e.Profile.PublicBaseURL, key), Width: dim.Width, Height: dim.Height, Bytes: info.Size(), SHA256: hash, OriginalFormat: "jpg", PublicMetadata: p.Metadata}
 	if p.Renditions != nil {
 		entry.Renditions = map[string]manifest.Image{}
 		for _, name := range manifest.RenditionNames {
-			child, err := e.inspect(j, Photo{ID: p.ID, Path: p.Renditions[name]})
+			child, err := e.inspectImage(j, Photo{ID: p.ID, Path: p.Renditions[name]}, name)
 			if err != nil {
 				return entry, err
 			}
@@ -338,7 +347,17 @@ func (e Engine) inspect(j Job, p Photo) (manifest.Entry, error) {
 	return entry, nil
 }
 func (e Engine) upload(ctx context.Context, j Job, p Photo, entry manifest.Image) error {
-	o, err := e.Store.Head(ctx, entry.Key)
+	stageKey := manifest.StagingKey(j.Namespace, p.ID, entry.SHA256)
+	// Verify the local spool before trusting an already-uploaded stage object.
+	// A failed job may be retried after Lightroom or another process changed it.
+	actual, err := e.inspect(j, p)
+	if err != nil {
+		return err
+	}
+	if actual.SHA256 != entry.SHA256 || actual.Bytes != entry.Bytes {
+		return errors.New("staged JPEG changed after job was prepared")
+	}
+	o, err := e.Store.Head(ctx, stageKey)
 	if err == nil {
 		if o.Hash == entry.SHA256 && o.Size == entry.Bytes {
 			return nil
@@ -348,28 +367,46 @@ func (e Engine) upload(ctx context.Context, j Job, p Photo, entry manifest.Image
 	if !errors.Is(err, storage.ErrNotFound) {
 		return err
 	}
-	actual, err := e.inspect(j, p)
-	if err != nil {
-		return err
-	}
-	if actual.SHA256 != entry.SHA256 || actual.Bytes != entry.Bytes {
-		return errors.New("staged JPEG changed after job was prepared")
-	}
 	f, err := os.Open(p.Path)
 	if err != nil {
 		return errors.New("cannot open staged JPEG")
 	}
 	defer f.Close()
-	err = e.Store.Put(ctx, entry.Key, f, entry.Bytes, storage.PutOptions{Create: true, Hash: entry.SHA256, ContentType: "image/jpeg", CacheControl: "public, max-age=31536000, immutable"})
+	err = e.Store.Put(ctx, stageKey, f, entry.Bytes, storage.PutOptions{Create: true, Hash: entry.SHA256, ContentType: "image/jpeg", CacheControl: "private, no-store"})
 	if err != nil && !errors.Is(err, storage.ErrConflict) {
 		return err
 	}
-	o, err = e.Store.Head(ctx, entry.Key)
+	o, err = e.Store.Head(ctx, stageKey)
 	if err != nil {
 		return err
 	}
 	if o.Hash != entry.SHA256 || o.Size != entry.Bytes {
 		return errors.New("uploaded JPEG failed verification")
+	}
+	return nil
+}
+
+// promoteAll is intentionally after uploadAll: a failed staging upload leaves
+// all stable public filenames untouched. Copies may be retried safely because
+// their sources are content-addressed and the job journal fixes every digest.
+func (e Engine) promoteAll(ctx context.Context, j Job, uploads []uploadWork) error {
+	for _, upload := range uploads {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		stageKey := manifest.StagingKey(j.Namespace, upload.photo.ID, upload.image.SHA256)
+		existing, err := e.Store.Head(ctx, upload.image.Key)
+		if err == nil && existing.Hash == upload.image.SHA256 && existing.Size == upload.image.Bytes {
+			continue
+		}
+		if err != nil && !errors.Is(err, storage.ErrNotFound) {
+			return err
+		}
+		if err := e.Store.Copy(ctx, stageKey, upload.image.Key, storage.CopyOptions{
+			Hash: upload.image.SHA256, ContentType: "image/jpeg", CacheControl: "public, max-age=86400, s-maxage=2592000",
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }

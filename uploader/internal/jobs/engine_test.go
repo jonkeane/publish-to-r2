@@ -95,6 +95,26 @@ func (s *fakeStore) Put(ctx context.Context, key string, r io.ReadSeeker, size i
 	}
 	return nil
 }
+func (s *fakeStore) Copy(ctx context.Context, source, destination string, options storage.CopyOptions) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if s.beforePut != nil {
+		s.beforePut(destination)
+	}
+	if s.fail != "" && (strings.Contains(source, s.fail) || strings.Contains(destination, s.fail)) {
+		return storage.ErrNetwork
+	}
+	from, exists := s.objects[source]
+	if !exists {
+		return storage.ErrNotFound
+	}
+	s.puts[destination]++
+	s.objects[destination] = fakeObject{append([]byte(nil), from.body...), storage.Object{Key: destination, Size: from.info.Size, Hash: options.Hash, ETag: config.NewID(), Modified: time.Now().UTC()}}
+	return nil
+}
 func (s *fakeStore) Delete(ctx context.Context, key string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -332,8 +352,8 @@ func TestIncrementalIdentityAndMetadata(t *testing.T) {
 	q = prepare(t, e, "gallery")
 	add(t, e, &q, "photo1", 255)
 	r3 := run(t, e, q.Job)
-	if r3.Photos[0].Key == r.Photos[0].Key {
-		t.Fatal("edit reused immutable URL")
+	if r3.Photos[0].Key != r.Photos[0].Key || r3.Photos[0].SHA256 == r.Photos[0].SHA256 {
+		t.Fatal("edit did not replace the stable image bytes")
 	}
 	q = prepare(t, e, "gallery")
 	q.Job.Title = "Renamed"
@@ -440,7 +460,7 @@ func TestReusedJobIDAndChangedStaging(t *testing.T) {
 	e, s := fixture(t)
 	p := prepare(t, e, "gallery")
 	add(t, e, &p, "photo", 3)
-	s.fail = "photos/"
+	s.fail = "staging/"
 	e.Run(context.Background(), p.Job)
 	changed := p.Job
 	changed.Title = "Different request"

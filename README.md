@@ -1,6 +1,6 @@
 # Lightroom to R2 Publisher plugin
 
-A macOS Lightroom Classic Export/Publish Service, a Go uploader, and a Hugo integration for `jonkeane/photo-site`. Lightroom publishes immutable JPEGs and gallery manifests to R2. A small site importer reads those manifests before Hugo builds **one ordinary page per photograph**, preserving the existing pagination, photo navigation, photo strip, and taxonomies.
+A macOS Lightroom Classic Export/Publish Service, a Go uploader, and a Hugo integration for `jonkeane/photo-site`. Lightroom stages hash-verified JPEGs and publishes gallery manifests that reference stable public image paths in R2. A small site importer reads those manifests before Hugo builds **one ordinary page per photograph**, preserving the existing pagination, photo navigation, photo strip, and taxonomies.
 
 The target is Lightroom Classic 15.5 on Apple Silicon. The local installation reports 15.5.1.
 
@@ -47,6 +47,15 @@ Publish the affected photos, then run the usual site import/build/deploy. The ma
 - `tests/`: Lua SDK mocks, schema checks, and Hugo integration tests. Go transaction/transport tests live beside their packages.
 
 Runtime state lives under `~/Library/Application Support/R2Publisher` with private permissions. Use `R2PUBLISHER_HOME` to relocate runtime state, including saved credentials. Defaults: 5 GiB spool, 100 MiB maximum JPEG, 10 retained historical manifests plus all history from the last 30 days, and a 30-day grace period for separate maintenance cleanup. Automatic cleanup on publication does not wait for that grace period. Adjust these values in Lightroom’s **Storage and retention** section.
+
+## Stable image path migration
+
+New publishes upload verified JPEGs to private hash-addressed staging keys, then
+copy them to the stable public `large.jpg`, `gallery.jpg`, and `thumbnail.jpg`
+coordinates immediately before committing the gallery manifest. Existing
+hash-addressed galleries need a one-time server-side migration before the next
+website import; see [r2publisher/README.md](r2publisher/README.md). The migration
+updates remote manifests without asking Lightroom to render or upload images.
 
 Release artifacts are unsigned and built for the Mac running `make package`. Build and test on Intel before distributing an Intel version. Windows credential storage and packaging are not implemented.
 

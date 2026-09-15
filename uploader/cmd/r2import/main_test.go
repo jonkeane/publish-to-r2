@@ -13,7 +13,7 @@ import (
 
 func fixture() map[string]any {
 	hash := strings.Repeat("a", 64)
-	key := "photos/catalog/photo/" + hash + ".jpg"
+	key := "photos/catalog/photo/large.jpg"
 	return map[string]any{"schemaVersion": 1, "revision": "rev", "galleryId": "gallery", "namespace": "catalog", "serviceId": "service", "entries": []any{map[string]any{"id": "photo", "key": key, "source": "https://images.example.com/" + key, "sha256": hash, "width": 3000, "height": 2000, "bytes": 1234, "dateTaken": "2026-09-09T12:00:00"}}}
 }
 func TestValidate(t *testing.T) {
@@ -76,7 +76,11 @@ func TestValidateRenditions(t *testing.T) {
 	m := fixture()
 	p := m["entries"].([]any)[0].(map[string]any)
 	variant := func(hash string) map[string]any {
-		key := "photos/catalog/photo/" + strings.Repeat(hash, 64) + ".jpg"
+		name := "thumbnail"
+		if hash == "c" {
+			name = "gallery"
+		}
+		key := "photos/catalog/photo/" + name + ".jpg"
 		return map[string]any{"key": key, "source": "https://images.example.com/" + key, "sha256": strings.Repeat(hash, 64), "width": 384, "height": 256, "bytes": 200}
 	}
 	p["renditions"] = map[string]any{"thumbnail": variant("b"), "gallery": variant("c")}
@@ -91,7 +95,7 @@ func TestValidateRenditions(t *testing.T) {
 			r["thumbnail"].(map[string]any)["source"] = "https://foreign.example/photo.jpg"
 		},
 		func(r map[string]any) { r["thumbnail"].(map[string]any)["width"] = 0 },
-		func(r map[string]any) { r["thumbnail"].(map[string]any)["sha256"] = strings.Repeat("d", 64) },
+		func(r map[string]any) { r["thumbnail"].(map[string]any)["sha256"] = "not-a-hash" },
 	} {
 		var invalid map[string]any
 		_ = json.Unmarshal(data, &invalid)
